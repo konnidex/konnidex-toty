@@ -91,8 +91,8 @@ body {
     cursor: grab;
     margin: 5px;
     display: inline-block;
-    pointer-events:none;
     -webkit-touch-callout:none;
+    user-select:none;
 }
 </style>
 </head>
