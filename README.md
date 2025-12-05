@@ -1,9 +1,8 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>KD | TOTY</title>
-
+</head>
 <style>
 body {
     background: url("https://github.com/konnidex/konnidex-toty/blob/main/images/webbackground.PNG?raw=true") no-repeat center center fixed;
