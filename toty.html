@@ -59,20 +59,25 @@ body {
     margin-top: 40px;
     display: flex;
     justify-content: center;
-    gap: 8px;         /* smaller gap so they fit on mobile */
-    flex-wrap: nowrap; /* keep them in ONE row */
+    gap: 6px; /* small gap so they fit */
+    flex-wrap: nowrap; 
+    width: 100%;
+    padding: 0 10px; /* small side padding */
+    box-sizing: border-box;
 }
 
 .tabs button {
-    padding: 8px 15px;   /* smaller padding for mobile */
-    font-size: 15px;     /* slightly smaller text */
+    flex: 1;              /* auto-resize buttons */
+    padding: 8px 5px;     /* tighter padding */
+    font-size: 14px;      /* smaller text for mobile */
     cursor: pointer;
     border: none;
     background: #0e3460;
     color: #d4c369;
     border-radius: 5px;
-    white-space: nowrap; /* forces text to stay on one line */
+    white-space: nowrap;  /* keep text on one line */
 }
+
 
 .tabs button.active {
     background: #0d47a1;
@@ -513,3 +518,4 @@ window.onload = () => {
 
 </body>
 </html>
+
