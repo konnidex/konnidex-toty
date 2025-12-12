@@ -1,8 +1,9 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>KD | TOTY</title>
-</head>
+
 <style>
 body {
     background: url("https://github.com/konnidex/konnidex-toty/blob/main/images/webbackground.PNG?raw=true") no-repeat center center fixed;
@@ -30,7 +31,6 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    color:#d4c369;
 }
 
 .box img {
@@ -91,8 +91,6 @@ body {
     cursor: grab;
     margin: 5px;
     display: inline-block;
-    -webkit-touch-callout:none;
-    user-select:none;
 }
 </style>
 </head>
@@ -193,7 +191,7 @@ body {
     color: #d4c369;
     font-size: 18px;
 ">
-    *Zoom out take screenshot and submit vote
+    *Take screenshot and submit vote
 </p>
 
 <a style="
@@ -206,10 +204,10 @@ border-radius:12px;
 text-decoration:none;
 font-weight:600;
 box-shadow:0 4px 10px rgba(0,0,0,0.3);
-"
-class="btn btn-primary"
-href="https://tally.so/r/KYpldK"
-target="_blank"
+" 
+class="btn btn-primary" 
+href="https://tally.so/r/KYpldK" 
+target="_blank" 
 rel="noopener noreferrer">
 Submit
 </a>
@@ -217,79 +215,144 @@ Submit
 <script>
 let draggedPlayer = null;
 let draggedFromBox = null;
+let touchClone = null;
+let currentTouchBox = null;
 
-// DRAG START
+const slider = document.getElementById("playerSlider");
+const boxes = document.querySelectorAll(".box");
+
+// ---------------- DESKTOP DRAG -----------------
 document.addEventListener("dragstart", e => {
     if (e.target.classList.contains("player-img")) {
         draggedPlayer = e.target;
-        draggedFromBox = draggedPlayer.parentElement.classList.contains("box") ? draggedPlayer.parentElement : null;
+        draggedFromBox = draggedPlayer.parentElement.classList.contains("box")
+            ? draggedPlayer.parentElement
+            : null;
     }
 });
 
-// DROP INTO TEAM
-document.querySelectorAll(".box").forEach(box => {
+boxes.forEach(box => {
     box.addEventListener("dragover", e => e.preventDefault());
+    box.addEventListener("drop", () => dropIntoBox(box));
+});
 
-    box.addEventListener("drop", () => {
-        if (!draggedPlayer) return;
+slider.addEventListener("dragover", e => e.preventDefault());
+slider.addEventListener("drop", () => dropToSlider());
 
-        let requiredType = box.dataset.type;
-        let playerType = [...draggedPlayer.classList].find(c =>
-            ["attackers","midfielders","defenders","keepers"].includes(c)
-        );
+// ---------------- TOUCH DRAG (MOBILE) -----------------
+document.querySelectorAll(".player-img").forEach(img => {
+    img.addEventListener("touchstart", e => {
+        draggedPlayer = img;
+        draggedFromBox = img.parentElement.classList.contains("box") 
+            ? img.parentElement 
+            : null;
 
-        // Only allow same category
-        if (requiredType === playerType) {
+        touchClone = img.cloneNode(true);
+        touchClone.style.position = "fixed";
+        touchClone.style.width = img.offsetWidth + "px";
+        touchClone.style.height = img.offsetHeight + "px";
+        touchClone.style.pointerEvents = "none";
+        touchClone.style.opacity = "0.8";
 
-            if (box.children.length > 0) {
-                let existingPlayer = box.children[0];
+        document.body.appendChild(touchClone);
+    });
 
-                // Swap only if dragged player is from another box
-                if (draggedFromBox) {
-                    draggedFromBox.appendChild(existingPlayer); // Move existing player back to original box
-                } else {
-                    slider.appendChild(existingPlayer); // If dragged from slider, move existing player back to slider
-                }
-            }
+    img.addEventListener("touchmove", e => {
+        let t = e.touches[0];
+        touchClone.style.left = t.clientX - 45 + "px";
+        touchClone.style.top = t.clientY - 45 + "px";
 
-            box.innerHTML = "";
-            box.appendChild(draggedPlayer); // Move dragged player
+        // detect box under touch
+        currentTouchBox = [...boxes].find(b => {
+            let rect = b.getBoundingClientRect();
+            return (
+                t.clientX > rect.left &&
+                t.clientX < rect.right &&
+                t.clientY > rect.top &&
+                t.clientY < rect.bottom
+            );
+        });
+
+        e.preventDefault();
+    });
+
+    img.addEventListener("touchend", e => {
+        if (currentTouchBox) {
+            dropIntoBox(currentTouchBox);
+        } else {
+            dropToSlider();
         }
 
+        if (touchClone) touchClone.remove();
+        touchClone = null;
         draggedPlayer = null;
         draggedFromBox = null;
     });
 });
 
-// DROP BACK TO SLIDER
-const slider = document.getElementById("playerSlider");
-slider.addEventListener("dragover", e => e.preventDefault());
-slider.addEventListener("drop", () => {
+// --------------- DROP INTO BOX ----------------
+function dropIntoBox(box) {
     if (!draggedPlayer) return;
 
+    let required = box.dataset.type;
+    let type = [...draggedPlayer.classList].find(c =>
+        ["attackers", "midfielders", "defenders", "keepers"].includes(c)
+    );
+
+    if (required !== type) {
+        draggedPlayer = null;
+        draggedFromBox = null;
+        return;
+    }
+
+    if (box.children.length > 0) {
+        let existing = box.children[0];
+
+        if (draggedFromBox) {
+            draggedFromBox.appendChild(existing);
+        } else {
+            slider.appendChild(existing);
+        }
+    }
+
+    box.innerHTML = "";
+    box.appendChild(draggedPlayer);
+
+    draggedPlayer = null;
+    draggedFromBox = null;
+}
+
+// --------------- DROP BACK TO SLIDER --------------
+function dropToSlider() {
+    if (!draggedPlayer) return;
     slider.appendChild(draggedPlayer);
     draggedPlayer = null;
     draggedFromBox = null;
-});
+}
 
-// TAB FILTERING (ONLY AFFECT SLIDER)
+// ---------------- CATEGORY FILTER ----------------
 document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.addEventListener("click", () => {
         document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
 
         let type = btn.dataset.type;
+
         slider.querySelectorAll(".player-img").forEach(img => {
+            if (img.parentElement.classList.contains("box")) return; // don't hide picked players
             img.style.display = img.classList.contains(type) ? "inline-block" : "none";
         });
     });
 });
 
-// DEFAULT CATEGORY ON PAGE LOAD
+// ---------------- DEFAULT CATEGORY ----------------
 window.onload = () => {
     let defaultType = "attackers";
+
     slider.querySelectorAll(".player-img").forEach(img => {
-        img.style.display = img.classList.contains(defaultType) ? "inline-block" : "none";
+        if (!img.parentElement.classList.contains("box")) {
+            img.style.display = img.classList.contains(defaultType) ? "inline-block" : "none";
+        }
     });
 };
 </script>
@@ -298,8 +361,6 @@ window.onload = () => {
 
 
 
+
 </body>
-
 </html>
-
-
