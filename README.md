@@ -21,6 +21,7 @@ body {
     grid-template-columns: repeat(5, 1fr);
     grid-template-rows: repeat(4, 120px);
     gap: 15px;
+    color:#d4c369;
 }
 
 .box {
