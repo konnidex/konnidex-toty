@@ -21,7 +21,6 @@ body {
     grid-template-columns: repeat(5, 1fr);
     grid-template-rows: repeat(4, 120px);
     gap: 15px;
-    color:#d4c369;
 }
 
 .box {
@@ -60,17 +59,19 @@ body {
     margin-top: 40px;
     display: flex;
     justify-content: center;
-    gap: 15px;
+    gap: 8px;         /* smaller gap so they fit on mobile */
+    flex-wrap: nowrap; /* keep them in ONE row */
 }
 
 .tabs button {
-    padding: 10px 25px;
-    font-size: 17px;
+    padding: 8px 15px;   /* smaller padding for mobile */
+    font-size: 15px;     /* slightly smaller text */
     cursor: pointer;
     border: none;
     background: #0e3460;
     color: #d4c369;
     border-radius: 5px;
+    white-space: nowrap; /* forces text to stay on one line */
 }
 
 .tabs button.active {
