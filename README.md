@@ -124,6 +124,15 @@ body {
         margin: 5px;
     }
 }
+.slider-container button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+}
+
+.slider-container button:first-child { left: 0; }
+.slider-container button:last-child { right: 0; }
 
 </style>
 </head>
