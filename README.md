@@ -85,7 +85,7 @@ body {
     width: 100%;
     overflow-x: auto;
     white-space: nowrap;
-    padding: 10px;
+    padding: 30px;
     touch-action: none;      
     pointer-events: auto;
 }
@@ -113,7 +113,7 @@ body {
         display: flex;
         justify-content: center; /* center the player images */
         overflow: hidden;
-        width: 100%;
+        width: 150%;
         padding: 0 10px;         /* small side padding */
         box-sizing: border-box;
     }
@@ -124,6 +124,43 @@ body {
         margin: 5px;
     }
 }
+.slider-container button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+}
+
+.slider-container button:first-child { left: 0; }
+.slider-container button:last-child { right: 0; }
+
+#playerSlider {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;              /* make scrollable */
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch; /* momentum scrolling on iOS */
+  scroll-behavior: smooth;
+  touch-action: pan-x;           /* allow horizontal swipe even on children */
+  cursor: grab;
+}
+
+#playerSlider:active {
+  cursor: grabbing;
+}
+
+/* Optional scrollbar styling (visible on Android / PC) */
+#playerSlider::-webkit-scrollbar {
+  height: 8px;
+}
+#playerSlider::-webkit-scrollbar-thumb {
+  background: #d4c369;
+  border-radius: 10px;
+}
+#playerSlider::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.15);
+}
+
 
 
 </style>
@@ -225,7 +262,7 @@ body {
     color: #d4c369;
     font-size: 18px;
 ">
-    *Take screenshot and submit vote
+    *Swipe the visible slider , add players <br>take screenshot and submit vote.
 </p>
 
 <a style="
@@ -292,11 +329,12 @@ document.querySelectorAll(".player-img").forEach(img => {
     });
 
     img.addEventListener("touchmove", e => {
+        if (!draggedPlayer) return; // allow normal slider scroll
+
         let t = e.touches[0];
         touchClone.style.left = t.clientX - 45 + "px";
         touchClone.style.top = t.clientY - 45 + "px";
 
-        // detect box under touch
         currentTouchBox = [...boxes].find(b => {
             let rect = b.getBoundingClientRect();
             return (
@@ -307,10 +345,10 @@ document.querySelectorAll(".player-img").forEach(img => {
             );
         });
 
-        e.preventDefault();
+        e.preventDefault(); // only prevent scroll when dragging player
     });
 
-    img.addEventListener("touchend", e => {
+    img.addEventListener("touchend", () => {
         if (currentTouchBox) {
             dropIntoBox(currentTouchBox);
         } else {
@@ -341,7 +379,6 @@ function dropIntoBox(box) {
 
     if (box.children.length > 0) {
         let existing = box.children[0];
-
         if (draggedFromBox) {
             draggedFromBox.appendChild(existing);
         } else {
@@ -373,7 +410,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
         let type = btn.dataset.type;
 
         slider.querySelectorAll(".player-img").forEach(img => {
-            if (img.parentElement.classList.contains("box")) return; // don't hide picked players
+            if (img.parentElement.classList.contains("box")) return;
             img.style.display = img.classList.contains(type) ? "inline-block" : "none";
         });
     });
@@ -389,151 +426,50 @@ window.onload = () => {
         }
     });
 };
-(function() {
-  const slider = document.getElementById("playerSlider");
-  if (!slider) return;
 
-  // ----- Create buttons (dynamically) -----
-  const makeBtn = (dir) => {
-    const b = document.createElement("button");
-    b.className = "slider-arrow " + dir;
-    b.setAttribute("aria-label", dir === "left" ? "Scroll left" : "Scroll right");
-    b.innerHTML = dir === "left" ? "◀" : "▶";
-    // basic styles (kept minimal & scoped to .slider-arrow)
-    Object.assign(b.style, {
-      position: "absolute",
-      top: "50%",
-      transform: "translateY(-50%)",
-      zIndex: 999,
-      border: "none",
-      padding: "10px 12px",
-      fontSize: "18px",
-      borderRadius: "8px",
-      background: "rgba(14,52,96,0.95)",
-      color: "#d4c369",
-      boxShadow: "0 4px 10px rgba(0,0,0,0.25)",
-      cursor: "pointer",
-      userSelect: "none",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    });
-    return b;
-  };
+let isDraggingSlider = false;
+let startX = 0;
+let scrollLeft = 0;
 
-  // container for positioning relative to slider
-  const container = document.createElement("div");
-  Object.assign(container.style, {
-    position: "relative",
-    width: "100%",
-    marginTop: "8px" // small spacing to avoid overlap
+slider.addEventListener("pointerdown", e => {
+  if (e.target.classList.contains("player-img")) return;
+
+  isDraggingSlider = true;
+  startX = e.clientX;
+  scrollLeft = slider.scrollLeft;
+
+  // temporarily disable selection and pointer events on players
+  slider.querySelectorAll(".player-img").forEach(img => {
+    img.style.userSelect = "none";
+    img.style.pointerEvents = "none";
   });
 
-  // insert container before slider, then move slider inside container
-  slider.parentNode.insertBefore(container, slider);
-  container.appendChild(slider);
+  slider.style.cursor = "grabbing";
+});
 
-  const leftBtn = makeBtn("left");
-  const rightBtn = makeBtn("right");
-  // position buttons
-  leftBtn.style.left = "6px";
-  rightBtn.style.right = "6px";
+slider.addEventListener("pointermove", e => {
+  if (!isDraggingSlider) return;
+  const dx = e.clientX - startX;
+  slider.scrollLeft = scrollLeft - dx;
+});
 
-  container.appendChild(leftBtn);
-  container.appendChild(rightBtn);
+const stopSliderDrag = () => {
+  if (!isDraggingSlider) return;
+  isDraggingSlider = false;
 
-  // ----- Scroll behavior -----
-  const scrollAmount = Math.max(200, Math.round(slider.clientWidth * 0.6));
-  let scrollInterval = null;
-
-  const startScroll = (dir) => {
-    stopScroll();
-    // initial smooth scroll
-    slider.scrollBy({ left: dir === "left" ? -scrollAmount : scrollAmount, behavior: "smooth" });
-    // if user holds, continue scrolling every 120ms
-    scrollInterval = setInterval(() => {
-      slider.scrollBy({ left: dir === "left" ? -120 : 120 });
-    }, 120);
-  };
-  const stopScroll = () => {
-    if (scrollInterval) {
-      clearInterval(scrollInterval);
-      scrollInterval = null;
-    }
-  };
-
-  // mouse interactions
-  leftBtn.addEventListener("mousedown", (e) => { e.preventDefault(); startScroll("left"); });
-  rightBtn.addEventListener("mousedown", (e) => { e.preventDefault(); startScroll("right"); });
-  document.addEventListener("mouseup", stopScroll);
-  leftBtn.addEventListener("mouseleave", stopScroll);
-  rightBtn.addEventListener("mouseleave", stopScroll);
-
-  // touch interactions (mobile)
-  leftBtn.addEventListener("touchstart", (e) => { e.preventDefault(); startScroll("left"); }, {passive:false});
-  rightBtn.addEventListener("touchstart", (e) => { e.preventDefault(); startScroll("right"); }, {passive:false});
-  document.addEventListener("touchend", stopScroll);
-
-  // ----- Wheel support for horizontal scrolling -----
-  slider.addEventListener("wheel", (e) => {
-    // prefer horizontal scroll; if vertical, convert to horizontal
-    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-      slider.scrollBy({ left: e.deltaY, behavior: "auto" });
-      e.preventDefault();
-    }
-  }, { passive: false });
-
-  // ----- Pointer drag for slider (only when dragging the slider itself,
-  // not when drag-starting a player image). This preserves player-image drag behavior. -----
-  let isPointerDown = false;
-  let startX = 0;
-  let startScrollLeft = 0;
-
-  slider.addEventListener("pointerdown", (e) => {
-    // only start slider drag if the pointer target is the slider (or its container),
-    // not when a player image is the target (so image drag won't be blocked).
-    if (e.target.classList && e.target.classList.contains("player-img")) return;
-    isPointerDown = true;
-    slider.setPointerCapture(e.pointerId);
-    startX = e.clientX;
-    startScrollLeft = slider.scrollLeft;
-    slider.style.cursor = "grabbing";
-    e.preventDefault();
+  slider.querySelectorAll(".player-img").forEach(img => {
+    img.style.userSelect = "";
+    img.style.pointerEvents = "";
   });
 
-  slider.addEventListener("pointermove", (e) => {
-    if (!isPointerDown) return;
-    const dx = e.clientX - startX;
-    slider.scrollLeft = startScrollLeft - dx;
-  });
+  slider.style.cursor = "grab";
+};
 
-  const endPointer = (e) => {
-    if (!isPointerDown) return;
-    isPointerDown = false;
-    try { slider.releasePointerCapture && slider.releasePointerCapture(e.pointerId); } catch (err) {}
-    slider.style.cursor = "grab";
-  };
+slider.addEventListener("pointerup", stopSliderDrag);
+slider.addEventListener("pointercancel", stopSliderDrag);
+slider.addEventListener("pointerleave", stopSliderDrag);
 
-  slider.addEventListener("pointerup", endPointer);
-  slider.addEventListener("pointercancel", endPointer);
-  slider.addEventListener("pointerleave", endPointer);
 
-  // ----- small accessibility: hide buttons when touch devices in narrow view? -----
-  const updateButtonVisibility = () => {
-    // keep visible always but reduce size on very small screens
-    if (window.innerWidth < 420) {
-      leftBtn.style.padding = "8px 10px";
-      rightBtn.style.padding = "8px 10px";
-    } else {
-      leftBtn.style.padding = "10px 12px";
-      rightBtn.style.padding = "10px 12px";
-    }
-  };
-  window.addEventListener("resize", updateButtonVisibility);
-  updateButtonVisibility();
-
-  // done
-})();
 </script>
 
 
