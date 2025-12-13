@@ -125,7 +125,7 @@ body {
     }
 }
 .slider-container button {
-    position: absolute;
+    position: center;
     top: 50%;
     transform: translateY(-50%);
     z-index: 10;
