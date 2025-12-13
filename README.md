@@ -82,7 +82,7 @@ body {
 
 .slider-container {
     margin-top: 40px;
-    width: 100%;
+    width: 150%;
     overflow-x: auto;
     white-space: nowrap;
     padding: 30px;
